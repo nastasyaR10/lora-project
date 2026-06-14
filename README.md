@@ -1,4 +1,5 @@
 # lora-project
+
 Применение LoRA для адаптации Qwen2.5-0.5B-Instruct к задаче классификации литературных периодов
 
 ## О проекте
@@ -10,6 +11,7 @@
 стилистических и содержательных обоснований.
 
 ## Структура проекта
+
 •	prepare_data.py – скрипт подготовки набора данных; <br>
 •	download_model.py – скрипт загрузки базовой модели из Hugging Face; <br>
 •	train.py – скрипт обучения модели методом LoRA; <br>
@@ -24,3 +26,19 @@
 
 
 ## Запуск
+
+```cmd
+# 1. Клонировать репозиторий
+git clone https://github.com/nastasyaR10/lora-project.git
+cd lora-project
+
+# 2. Создать и активировать виртуальное окружение
+python -m venv venv
+venv\Scripts\activate      # Windows
+
+# 3. Установить зависимости
+pip install -r requirements.txt
+
+# 4. Запустить веб-сервер
+python server.py
+```
