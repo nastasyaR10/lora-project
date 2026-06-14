@@ -119,11 +119,11 @@ print(f"  Параметров: {model.num_parameters():,}")
 print("[3] Подготовка данных...")
 
 def format_chat(example):
-    messages = [
-        {"role": "system", "content": args.system_prompt},
-        {"role": "user", "content": f"{example['instruction']}\nТекст: {example['input']}"},
-        {"role": "assistant", "content": example['output']}
-    ]
+    messages = []
+    if args.system_prompt:
+        messages.append({"role": "system", "content": args.system_prompt})
+    messages.append({"role": "user", "content": f"{example['instruction']}\nТекст: {example['input']}"})
+    messages.append({"role": "assistant", "content": example['output']})
     text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
     return {"text": text}
 
