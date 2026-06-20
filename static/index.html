@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LoRA</title>
+    <style>
+        body {
+            font-family: Arial;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+            input.error, select.error, textarea.error {
+                border-color: #dc3545;
+                background: #fff5f5;
+            }
+
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+            }
+
+            button.danger {
+                background: #dc3545;
+            }
+
+            button.secondary {
+                background: #6c757d;
+            }
+
+            button.success {
+                background: #28a745;
+            }
+
+            button.example {
+                background: #5eb89e;
+            }
+
+                button.example:hover {
+                    background: #4a9e84;
+                }
+
+        #log, #metricsLog {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+
+            .status.running {
+                background: #d4edda;
+                color: #155724;
+                display: block;
+            }
+
+            .status.stopped {
+                background: #f8d7da;
+                color: #721c24;
+                display: block;
+            }
+
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+
+            .row > div {
+                flex: 1;
+            }
+
+        h3 {
+            margin-top: 0;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #2e8b57;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: #e9ecef;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+            font-size: 14px;
+        }
+
+            .tab.active {
+                background: #2e8b57;
+                color: white;
+            }
+
+        .tab-content {
+            display: none;
+        }
+
+            .tab-content.active {
+                display: block;
+            }
+
+        .file-status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+            .file-status.loaded {
+                background: #d4edda;
+                color: #155724;
+            }
+
+            .file-status.not-loaded {
+                background: #f8d7da;
+                color: #721c24;
+            }
+
+        .file-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+            .file-row input[type="file"] {
+                display: none;
+            }
+
+        .file-label {
+            padding: 8px 16px;
+            background: #e9ecef;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+            .file-label:hover {
+                background: #dee2e6;
+            }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+            .checkbox-group label {
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                cursor: pointer;
+                padding: 5px 10px;
+                background: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 4px;
+                font-size: 14px;
+            }
+
+            .checkbox-group input[type="checkbox"] {
+                width: auto;
+                margin: 0;
+                cursor: pointer;
+            }
+
+            .checkbox-group label:hover {
+                background: #e9ecef;
+            }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+            .form-group label {
+                font-weight: 500;
+                margin-bottom: 5px;
+                display: block;
+            }
+
+        .spacer {
+            margin-top: 25px;
+            margin-bottom: 25px;
+            border-top: 1px solid #eee;
+        }
+
+        .validation-error {
+            color: #dc3545;
+            font-size: 13px;
+            margin-top: 3px;
+            display: none;
+        }
+
+            .validation-error.show {
+                display: block;
+            }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+            .modal-overlay.show {
+                display: flex;
+            }
+
+        .modal {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+            .modal h3 {
+                margin-top: 0;
+                color: #dc3545;
+            }
+
+            .modal ul {
+                margin: 15px 0;
+                padding-left: 20px;
+            }
+
+            .modal li {
+                margin: 5px 0;
+                color: #333;
+            }
+
+            .modal button {
+                margin-top: 15px;
+                width: 100%;
+            }
+
+        .inference-result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+            .inference-result .error {
+                color: #dc3545;
+            }
+
+        .plots-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .plot-box {
+            flex: 1;
+            min-width: 400px;
+        }
+
+            .plot-box canvas {
+                width: 100%;
+                border-radius: 4px;
+                border: 1px solid #ddd;
+            }
+
+            .plot-box h4 {
+                margin: 10px 0;
+            }
+
+        .code-header {
+            background: #2d2d2d;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 4px 4px 0 0;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .code-header .dot {
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                display: inline-block;
+            }
+
+                .code-header .dot.red {
+                    background: #ff5f56;
+                }
+
+                .code-header .dot.yellow {
+                    background: #ffbd2e;
+                }
+
+                .code-header .dot.green {
+                    background: #27c93f;
+                }
+
+        #extractorCode {
+            border-radius: 0 0 4px 4px;
+            margin-top: 0;
+        }
+
+        .btn-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>LoRA</h1>
+    <div id="status" class="status"></div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('training')">Обучение</button>
+        <button class="tab" onclick="switchTab('inference')">Инференс</button>
+        <button class="tab" onclick="switchTab('testing')">Вычисление метрик</button>
+        <button class="tab" onclick="switchTab('plots')">Графики обучения</button>
+        <button class="tab" onclick="switchTab('settings')">Загрузка модели</button>
+    </div>
+
+    <div id="tab-training" class="tab-content active">
+        <div class="section">
+            <h3>Проект</h3>
+            <div class="form-group"><label>Расположение базовой модели:</label><input type="text" id="modelPath" placeholder="Например: ./models_cache/qwen2.5-0.5b-instruct"><div class="validation-error" id="error-modelPath"></div></div>
+            <div class="form-group"><label>Расположение адаптеров:</label><input type="text" id="adaptersPath" placeholder="Например: ./models/lora_adapters"><div class="validation-error" id="error-adaptersPath"></div></div>
+            <div class="form-group"><label>Папка для логов и графиков:</label><input type="text" id="outputPath" placeholder="Например: ./output"><div class="validation-error" id="error-outputPath"></div></div>
+            <div class="form-group"><label>Системный промпт:</label><textarea id="system_prompt" rows="3" placeholder="Введите системный промпт..."></textarea><div class="validation-error" id="error-system_prompt"></div></div>
+        </div>
+        <div class="section">
+            <h3>Данные для обучения</h3>
+            <div class="row">
+                <div>
+                    <label>Обучающие данные:</label>
+                    <div class="file-row">
+                        <label for="trainFile" class="file-label">Выбрать файл</label>
+                        <input type="file" id="trainFile" accept=".json" onchange="fileSelected('train')" hidden>
+                        <span id="trainStatus" class="file-status not-loaded">Не загружен</span>
+                    </div>
+                    <div class="validation-error" id="error-trainFile"></div>
+                </div>
+                <div>
+                    <label>Тестовые данные:</label>
+                    <div class="file-row">
+                        <label for="testFile" class="file-label">Выбрать файл</label>
+                        <input type="file" id="testFile" accept=".json" onchange="fileSelected('test')" hidden>
+                        <span id="testStatus" class="file-status not-loaded">Не загружен</span>
+                    </div>
+                    <div class="validation-error" id="error-testFile"></div>
+                </div>
+            </div>
+        </div>
+        <div class="section">
+            <h3>Настройки обучения</h3>
+            <div class="row">
+                <div class="form-group"><label>R (ранг):</label><input type="number" id="r" placeholder="Например: 8"><div class="validation-error" id="error-r"></div></div>
+                <div class="form-group"><label>Alpha:</label><input type="number" id="alpha" placeholder="Например: 16"><div class="validation-error" id="error-alpha"></div></div>
+                <div class="form-group"><label>Dropout:</label><input type="number" id="dropout" placeholder="Например: 0.1" step="0.01" min="0" max="1"><div class="validation-error" id="error-dropout"></div></div>
+            </div>
+            <div class="row">
+                <div class="form-group"><label>Эпохи:</label><input type="number" id="epochs" placeholder="Например: 10"><div class="validation-error" id="error-epochs"></div></div>
+                <div class="form-group"><label>Batch Size:</label><input type="number" id="batch_size" placeholder="Например: 1"><div class="validation-error" id="error-batch_size"></div></div>
+                <div class="form-group"><label>Learning Rate:</label><input type="text" id="lr" placeholder="Например: 2e-5 или 0.0001"><div class="validation-error" id="error-lr"></div></div>
+            </div>
+            <div class="form-group">
+                <label>Target Modules:</label><div class="checkbox-group" id="targetModules">
+                    <label><input type="checkbox" value="q_proj"> q_proj</label><label><input type="checkbox" value="k_proj"> k_proj</label><label><input type="checkbox" value="v_proj"> v_proj</label><label><input type="checkbox" value="o_proj"> o_proj</label><label><input type="checkbox" value="gate_proj"> gate_proj</label><label><input type="checkbox" value="up_proj"> up_proj</label><label><input type="checkbox" value="down_proj"> down_proj</label>
+                </div><div class="validation-error" id="error-modules"></div>
+            </div>
+            <div class="form-group"><label>Устройство:</label><select id="device"><option value="cpu">CPU</option><option value="cuda">GPU</option></select><div class="validation-error" id="error-device"></div></div>
+        </div>
+        <div class="section">
+            <div class="btn-row">
+                <button id="startBtn" class="success" onclick="startTraining()">Запустить обучение</button>
+                <button id="stopBtn" class="danger" onclick="stopTraining()" disabled>Остановить</button>
+                <button class="secondary" onclick="clearLog()">Очистить лог</button>
+                <button class="example" onclick="fillExample()">Пример</button>
+            </div>
+            <div id="errorMessage" style="color: #dc3545; margin-top: 10px; display: none;"></div>
+        </div>
+        <div class="section"><h3>Лог обучения</h3><div id="log"></div></div>
+    </div>
+
+    <div id="tab-inference" class="tab-content">
+        <div class="section">
+            <h3>Инференс</h3>
+            <div class="form-group">
+                <label>Режим модели:</label>
+                <div style="display: flex; gap: 20px; margin-top: 5px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal;"><input type="radio" name="inferenceMode" value="base" checked onchange="toggleAdapterField()" style="width: auto; margin: 0;"> Базовая модель</label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal;"><input type="radio" name="inferenceMode" value="lora" onchange="toggleAdapterField()" style="width: auto; margin: 0;"> LoRA-адаптер</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group"><label>Путь к базовой модели:</label><input type="text" id="inferenceModelPath" placeholder="Например: ./models_cache/qwen2.5-0.5b-instruct"></div>
+                <div class="form-group" id="adapterPathGroup"><label>Путь к адаптеру:</label><input type="text" id="inferenceAdapterPath" placeholder="Например: ./models/lora_adapters" disabled style="background: #e9ecef;"></div>
+            </div>
+            <div class="form-group">
+                <label>Системный промпт:</label>
+                <textarea id="inferenceSystemPrompt" rows="2" placeholder="Оставьте пустым, если не требуется"></textarea>
+                <button type="button" class="secondary" onclick="loadFromProject()" style="margin-top: 5px;">Загрузить из проекта</button>
+            </div>
+            <div class="form-group">
+                <label>Запрос (exit - завершить диалог):</label>
+                <textarea id="inferenceInput" rows="6" placeholder="Введите запрос..."></textarea>
+            </div>
+            <button id="inferSendBtn" class="success" onclick="runInference()">Отправить (Shift + Enter)</button>
+            <div id="inferenceResult" class="inference-result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="tab-testing" class="tab-content">
+        <div class="section">
+            <h3>Вычисление метрик</h3>
+            <div class="form-group">
+                <label>Режим модели:</label>
+                <div style="display: flex; gap: 20px; margin-top: 5px;">
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal;"><input type="radio" name="testMode" value="base" checked onchange="toggleTestAdapterField()" style="width: auto; margin: 0;"> Базовая модель</label>
+                    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; font-weight: normal;"><input type="radio" name="testMode" value="lora" onchange="toggleTestAdapterField()" style="width: auto; margin: 0;"> LoRA-адаптер</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="form-group"><label>Путь к базовой модели:</label><input type="text" id="testModelPath" placeholder="Например: ./models_cache/qwen2.5-0.5b-instruct"></div>
+                <div class="form-group" id="testAdapterPathGroup"><label>Путь к адаптеру:</label><input type="text" id="testAdapterPath" placeholder="Например: ./models/lora_adapters" disabled style="background: #e9ecef;"></div>
+            </div>
+            <div class="form-group">
+                <label>Файл с тестовыми данными:</label>
+                <div class="file-row">
+                    <label for="testDataFile" class="file-label">Выбрать файл</label>
+                    <input type="file" id="testDataFile" accept=".json" onchange="fileSelected('testData')" hidden>
+                    <span id="testDataStatus" class="file-status not-loaded">Не загружен</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Системный промпт:</label>
+                <textarea id="testSystemPrompt" rows="2" placeholder="Оставьте пустым, если не требуется"></textarea>
+                <button type="button" class="secondary" onclick="loadTestFromProject()" style="margin-top: 5px;">Загрузить из проекта</button>
+            </div>
+            <div class="form-group">
+                <label>Метрики для вычисления:</label>
+                <div class="checkbox-group" id="testMetrics">
+                    <label><input type="checkbox" value="accuracy" checked> Accuracy</label>
+                    <label><input type="checkbox" value="f1" checked> F1</label>
+                    <label><input type="checkbox" value="rouge_l" checked> ROUGE-L</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Функция извлечения ответа</label>
+                <div class="code-header">
+                    <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+                    <span>python</span>
+                </div>
+                <textarea id="extractorCode" rows="6" style="font-family: 'Courier New', monospace; background: #1e1e1e; color: #d4d4d4;">import re
+def extract(text):
+    # Пример реализации
+    match = re.search(r'Период:\s*(.+?)(?:\.|\n|$)', text)
+    return match.group(1).strip() if match else None</textarea>
+            </div>
+            <div class="btn-row">
+                <button id="computeBtn" class="success" onclick="computeMetrics()">Вычислить метрики</button>
+                <button id="stopComputeBtn" class="danger" onclick="stopCompute()" disabled>Остановить</button>
+            </div>
+            <div class="section" style="margin-top: 15px;"><h3>Результат</h3><div id="metricsLog"></div></div>
+        </div>
+    </div>
+
+    <div id="tab-plots" class="tab-content">
+        <div class="section">
+            <h3>Графики обучения</h3>
+            <div class="plots-container">
+                <div class="plot-box"><h4>Train Loss</h4><canvas id="lossPlot" width="400" height="300"></canvas></div>
+                <div class="plot-box"><h4>Perplexity</h4><canvas id="perplexityPlot" width="400" height="300"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-settings" class="tab-content">
+        <div class="section">
+            <h3>Загрузка модели</h3>
+            <div class="form-group"><label>Название модели на Hugging Face:</label><input type="text" id="downloadModelName" placeholder="Например: Qwen/Qwen2.5-0.5B-Instruct"></div>
+            <div class="form-group"><label>Директория для сохранения:</label><input type="text" id="downloadModelPath" placeholder="Например: ./models_cache/qwen2.5-0.5b-instruct"></div>
+            <button id="downloadBtn" class="success" onclick="downloadModel()">Скачать модель</button>
+            <div id="downloadStatus" style="margin-top: 10px;"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal"><h3>Ошибка запуска</h3><ul id="modalErrors"></ul><button onclick="closeModal()">OK</button></div>
+    </div>
+
+    <script>
+        let inferenceActive = false;
+        let plotsInterval = null;
+        let logInterval = null;
+        let computePollingInterval = null;
+        toggleAdapterField();
+        toggleTestAdapterField();
+
+        fetch('/status').then(r => r.json()).then(data => {
+            if (data.running_process) {
+                const statusDiv = document.getElementById('status');
+                statusDiv.className = 'status running';
+                if (data.running_process === 'инференс') {
+                    statusDiv.textContent = 'Запущен инференс...';
+                    inferenceActive = true;
+                    document.getElementById('inferenceModelPath').disabled = true;
+                    document.querySelector('input[name="inferenceMode"][value="base"]').disabled = true;
+                    document.querySelector('input[name="inferenceMode"][value="lora"]').disabled = true;
+                } else {
+                    statusDiv.textContent = 'Запущено ' + data.running_process + '...';
+                }
+
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('inferSendBtn').disabled = true;
+                document.getElementById('computeBtn').disabled = true;
+                document.getElementById('downloadBtn').disabled = true;
+
+                if (data.is_training) {
+                    document.getElementById('stopBtn').disabled = false;
+                    logInterval = setInterval(updateLog, 1000);
+                }
+                if (data.is_computing) {
+                    document.getElementById('stopComputeBtn').disabled = false;
+                    computePollingInterval = setInterval(() => {
+                        fetch('/compute_log').then(r => r.json()).then(d => {
+                            document.getElementById('metricsLog').textContent = 'Вычисление метрик...\n' + d.log;
+                            if (!d.running) {
+                                clearInterval(computePollingInterval);
+                                computePollingInterval = null;
+                                document.getElementById('computeBtn').disabled = false;
+                                document.getElementById('stopComputeBtn').disabled = true;
+                                document.getElementById('status').className = 'status';
+                                document.getElementById('status').textContent = '';
+                                document.getElementById('startBtn').disabled = false;
+                                document.getElementById('inferSendBtn').disabled = false;
+                                document.getElementById('downloadBtn').disabled = false;
+                            }
+                        });
+                    }, 1000);
+                }
+            }
+        });
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            if (tabName === 'plots') { updatePlots(); plotsInterval = setInterval(updatePlots, 5000); }
+            else { if (plotsInterval) { clearInterval(plotsInterval); plotsInterval = null; } }
+        }
+
+        function updatePlots() {
+            const outputPath = document.getElementById('outputPath').value.trim() || 'output';
+            fetch(`/plots_data?output_path=${encodeURIComponent(outputPath)}`)
+                .then(r => r.json()).then(data => {
+                    if (data.error) return;
+                    if (!data.training_started || data.current_epoch === 0) return;
+                    drawPlot('lossPlot', data.epochs, data.train_losses, 'Train Loss', '#007bff');
+                    drawPlot('perplexityPlot', data.epochs, data.perplexities, 'Perplexity', '#2e8b57');
+                    if (!data.is_training && plotsInterval) { clearInterval(plotsInterval); plotsInterval = null; }
+                }).catch(() => { });
+        }
+
+        function drawPlot(canvasId, epochs, values, label, color) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            if (!epochs || !epochs.length || !values || !values.length) {
+                ctx.fillStyle = '#888'; ctx.font = '14px Arial'; ctx.textAlign = 'center';
+                ctx.fillText('Нет данных', w / 2, h / 2); return;
+            }
+            const padding = 40, pw = w - padding * 2, ph = h - padding * 2;
+            const minVal = Math.min(...values) * 0.9, maxVal = Math.max(...values) * 1.1, range = maxVal - minVal || 1;
+            ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (ph / 4) * i;
+                ctx.beginPath(); ctx.moveTo(padding, y); ctx.lineTo(w - padding, y); ctx.stroke();
+                ctx.fillStyle = '#888'; ctx.font = '10px Arial'; ctx.textAlign = 'right';
+                ctx.fillText((maxVal - (range / 4) * i).toFixed(4), padding - 5, y + 3);
+            }
+            ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+            epochs.forEach((ep, i) => {
+                const x = padding + (pw / (epochs.length - 1 || 1)) * i;
+                const y = padding + ph - ((values[i] - minVal) / range) * ph;
+                if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.fillStyle = color;
+            epochs.forEach((ep, i) => {
+                const x = padding + (pw / (epochs.length - 1 || 1)) * i;
+                const y = padding + ph - ((values[i] - minVal) / range) * ph;
+                ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.fillStyle = '#333'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+            ctx.fillText(label, w / 2, 15); ctx.fillText('Epoch', w / 2, h - 5);
+        }
+
+        function toggleTestAdapterField() {
+            const mode = document.querySelector('input[name="testMode"]:checked').value;
+            const adapterInput = document.getElementById('testAdapterPath');
+            if (mode === 'base') { adapterInput.disabled = true; adapterInput.style.background = '#e9ecef'; adapterInput.value = ''; }
+            else { adapterInput.disabled = false; adapterInput.style.background = ''; }
+        }
+
+        function loadTestFromProject() {
+            const modelPath = document.getElementById('modelPath').value.trim();
+            const adaptersPath = document.getElementById('adaptersPath').value.trim();
+            const systemPrompt = document.getElementById('system_prompt').value.trim();
+            if (modelPath) document.getElementById('testModelPath').value = modelPath;
+            if (systemPrompt) document.getElementById('testSystemPrompt').value = systemPrompt;
+            if (document.querySelector('input[name="testMode"]:checked').value === 'lora' && adaptersPath)
+                document.getElementById('testAdapterPath').value = adaptersPath;
+        }
+
+        function getTestSelectedMetrics() {
+            return Array.from(document.querySelectorAll('#testMetrics input[type="checkbox"]:checked')).map(cb => cb.value).join(',');
+        }
+
+        function stopCompute() {
+            fetch('/stop_compute', { method: 'POST' }).then(() => {
+                if (computePollingInterval) { clearInterval(computePollingInterval); computePollingInterval = null; }
+                document.getElementById('computeBtn').disabled = false;
+                document.getElementById('stopComputeBtn').disabled = true;
+                document.getElementById('status').className = 'status';
+                document.getElementById('status').textContent = '';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('inferSendBtn').disabled = false;
+                document.getElementById('downloadBtn').disabled = false;
+            });
+        }
+
+        function computeMetrics() {
+            const mode = document.querySelector('input[name="testMode"]:checked').value;
+            const modelPath = document.getElementById('testModelPath').value.trim();
+            const adapterPath = document.getElementById('testAdapterPath').value.trim();
+            const testFile = document.getElementById('testDataFile').files[0];
+            const systemPrompt = document.getElementById('testSystemPrompt').value.trim();
+            const metrics = getTestSelectedMetrics();
+            const extractorCode = document.getElementById('extractorCode').value;
+
+            const errors = [];
+            if (!modelPath) errors.push('Не указан путь к базовой модели');
+            if (mode === 'lora' && !adapterPath) errors.push('Для LoRA укажите путь к адаптеру');
+            if (!testFile) errors.push('Не выбран файл с тестовыми данными');
+            if (!metrics) errors.push('Не выбраны метрики для вычисления');
+
+            if (errors.length > 0) {
+                showModal(errors);
+                return;
+            }
+
+            const metricsLog = document.getElementById('metricsLog');
+            metricsLog.textContent = 'Вычисление метрик...\n';
+            document.getElementById('computeBtn').disabled = true;
+            document.getElementById('stopComputeBtn').disabled = false;
+            document.getElementById('status').className = 'status running';
+            document.getElementById('status').textContent = 'Запущено вычисление метрик...';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('inferSendBtn').disabled = true;
+            document.getElementById('downloadBtn').disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', testFile);
+
+            fetch('/upload_test', { method: 'POST', body: formData })
+                .then(r => r.json())
+                .then(uploadResult => {
+                    return fetch('/compute_metrics', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            mode: mode, model_path: modelPath,
+                            adapter_path: mode === 'lora' ? adapterPath : null,
+                            test_path: uploadResult.path,
+                            system_prompt: systemPrompt || '',
+                            metrics: metrics,
+                            extractor_code: extractorCode
+                        })
+                    });
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.error) {
+                        if (data.error === 'Дождитесь завершения текущего процесса') {
+                            showModal([data.error]);
+                        } else {
+                            metricsLog.textContent += '\nОшибка: ' + data.error;
+                        }
+                        document.getElementById('computeBtn').disabled = false;
+                        document.getElementById('stopComputeBtn').disabled = true;
+                        document.getElementById('status').className = 'status';
+                        document.getElementById('status').textContent = '';
+                        document.getElementById('startBtn').disabled = false;
+                        document.getElementById('inferSendBtn').disabled = false;
+                        document.getElementById('downloadBtn').disabled = false;
+                        return;
+                    }
+                    computePollingInterval = setInterval(() => {
+                        fetch('/compute_log').then(r => r.json()).then(d => {
+                            metricsLog.textContent = 'Вычисление метрик...\n' + d.log;
+                            if (!d.running) {
+                                clearInterval(computePollingInterval);
+                                computePollingInterval = null;
+                                document.getElementById('computeBtn').disabled = false;
+                                document.getElementById('stopComputeBtn').disabled = true;
+                                document.getElementById('status').className = 'status';
+                                document.getElementById('status').textContent = '';
+                                document.getElementById('startBtn').disabled = false;
+                                document.getElementById('inferSendBtn').disabled = false;
+                                document.getElementById('downloadBtn').disabled = false;
+                            }
+                        });
+                    }, 1000);
+                })
+                .catch(e => {
+                    metricsLog.textContent += '\nОшибка соединения с сервером';
+                    document.getElementById('computeBtn').disabled = false;
+                    document.getElementById('stopComputeBtn').disabled = true;
+                    document.getElementById('status').className = 'status';
+                    document.getElementById('status').textContent = '';
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('inferSendBtn').disabled = false;
+                    document.getElementById('downloadBtn').disabled = false;
+                });
+        }
+
+        function downloadModel() {
+            const modelName = document.getElementById('downloadModelName').value.trim();
+            const modelPath = document.getElementById('downloadModelPath').value.trim();
+            const statusDiv = document.getElementById('downloadStatus');
+            if (!modelName) { statusDiv.innerHTML = '<span style="color:#dc3545;">Укажите название модели</span>'; return; }
+            if (!modelPath) { statusDiv.innerHTML = '<span style="color:#dc3545;">Укажите директорию для сохранения</span>'; return; }
+            statusDiv.textContent = 'Загрузка модели...';
+            document.getElementById('downloadBtn').disabled = true;
+            document.getElementById('status').className = 'status running';
+            document.getElementById('status').textContent = 'Запущена загрузка модели...';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('inferSendBtn').disabled = true;
+            document.getElementById('computeBtn').disabled = true;
+            fetch('/download_model', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_name: modelName, save_path: modelPath })
+            }).then(r => r.json()).then(data => {
+                if (data.error) {
+                    if (data.error === 'Дождитесь завершения текущего процесса') {
+                        showModal([data.error]);
+                    } else {
+                        statusDiv.innerHTML = '<span style="color:#dc3545;">Ошибка: ' + data.error + '</span>';
+                    }
+                } else {
+                    statusDiv.innerHTML = '<span style="color:#28a745;">Модель загружена</span>';
+                }
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('status').className = 'status';
+                document.getElementById('status').textContent = '';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('inferSendBtn').disabled = false;
+                document.getElementById('computeBtn').disabled = false;
+            }).catch(() => {
+                statusDiv.innerHTML = '<span style="color:#dc3545;">Ошибка соединения с сервером</span>';
+                document.getElementById('downloadBtn').disabled = false;
+                document.getElementById('status').className = 'status';
+                document.getElementById('status').textContent = '';
+                document.getElementById('startBtn').disabled = false;
+                document.getElementById('inferSendBtn').disabled = false;
+                document.getElementById('computeBtn').disabled = false;
+            });
+        }
+
+        function toggleAdapterField() {
+            const mode = document.querySelector('input[name="inferenceMode"]:checked').value;
+            const adapterInput = document.getElementById('inferenceAdapterPath');
+            if (mode === 'base') { adapterInput.disabled = true; adapterInput.style.background = '#e9ecef'; adapterInput.value = ''; }
+            else { adapterInput.disabled = false; adapterInput.style.background = ''; }
+        }
+
+        function loadFromProject() {
+            const modelPath = document.getElementById('modelPath').value.trim();
+            const adaptersPath = document.getElementById('adaptersPath').value.trim();
+            const systemPrompt = document.getElementById('system_prompt').value.trim();
+            if (modelPath) document.getElementById('inferenceModelPath').value = modelPath;
+            if (systemPrompt) document.getElementById('inferenceSystemPrompt').value = systemPrompt;
+            if (document.querySelector('input[name="inferenceMode"]:checked').value === 'lora' && adaptersPath)
+                document.getElementById('inferenceAdapterPath').value = adaptersPath;
+        }
+
+        function runInference() {
+            const mode = document.querySelector('input[name="inferenceMode"]:checked').value;
+            const modelPath = document.getElementById('inferenceModelPath').value.trim();
+            const adapterPath = document.getElementById('inferenceAdapterPath').value.trim();
+            const systemPrompt = document.getElementById('inferenceSystemPrompt').value.trim();
+            const text = document.getElementById('inferenceInput').value.trim();
+            if (!modelPath) { showErrorMessage('Укажите путь к модели'); return; }
+            if (mode === 'lora' && !adapterPath) { showErrorMessage('Для LoRA укажите путь к адаптеру'); return; }
+            if (!text) { showErrorMessage('Введите текст'); return; }
+            const resultDiv = document.getElementById('inferenceResult');
+            resultDiv.style.display = 'block'; resultDiv.textContent = 'Обработка...';
+            fetch('/infer', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mode: mode, model_path: modelPath, adapter_path: mode === 'lora' ? adapterPath : null, system_prompt: systemPrompt || '', text: text })
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'stopped') {
+                    inferenceActive = false;
+                    document.getElementById('inferenceModelPath').disabled = false;
+                    document.querySelector('input[name="inferenceMode"][value="base"]').disabled = false;
+                    document.querySelector('input[name="inferenceMode"][value="lora"]').disabled = false;
+                    toggleAdapterField();
+                    resultDiv.textContent = 'Диалог завершен.';
+                    document.getElementById('status').className = 'status';
+                    document.getElementById('status').textContent = '';
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('computeBtn').disabled = false;
+                    document.getElementById('downloadBtn').disabled = false;
+                } else if (data.error) {
+                    if (data.error === 'Дождитесь завершения текущего процесса') {
+                        showModal([data.error]);
+                    } else {
+                        resultDiv.innerHTML = '<span class="error">Ошибка: ' + data.error + '</span>';
+                    }
+                } else if (data.status === 'ok') {
+                    inferenceActive = true;
+                    document.getElementById('inferenceModelPath').disabled = true;
+                    document.querySelector('input[name="inferenceMode"][value="base"]').disabled = true;
+                    document.querySelector('input[name="inferenceMode"][value="lora"]').disabled = true;
+                    resultDiv.textContent = (data.response || '').replace(/\\n/g, '\n');
+                    document.getElementById('inferenceInput').value = '';
+                    document.getElementById('status').className = 'status running';
+                    document.getElementById('status').textContent = 'Запущен инференс...';
+                    document.getElementById('startBtn').disabled = true;
+                    document.getElementById('computeBtn').disabled = true;
+                    document.getElementById('downloadBtn').disabled = true;
+                }
+            }).catch(() => { resultDiv.innerHTML = '<span class="error">Ошибка соединения с сервером</span>'; });
+        }
+
+        function showErrorMessage(message) { document.getElementById('errorMessage').textContent = message; document.getElementById('errorMessage').style.display = 'block'; }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.shiftKey && e.key === 'Enter' && document.getElementById('tab-inference').classList.contains('active')) {
+                e.preventDefault(); runInference();
+            }
+        });
+
+        function fileSelected(type) {
+            const fileInput = document.getElementById(type + 'File');
+            const statusElement = document.getElementById(type + 'Status');
+            if (fileInput.files.length > 0) { statusElement.textContent = '✓ ' + fileInput.files[0].name; statusElement.className = 'file-status loaded'; }
+            else { statusElement.textContent = 'Не загружен'; statusElement.className = 'file-status not-loaded'; }
+        }
+
+        function getSelectedModules() { return Array.from(document.querySelectorAll('#targetModules input[type="checkbox"]:checked')).map(cb => cb.value).join(','); }
+
+        function isValidLearningRate(value) {
+            if (!value || !value.trim()) return false;
+            return /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/.test(value.trim()) && !isNaN(parseFloat(value)) && parseFloat(value) > 0;
+        }
+
+        function clearAllErrors() {
+            document.querySelectorAll('.validation-error').forEach(el => el.classList.remove('show'));
+            document.querySelectorAll('input.error, select.error, textarea.error').forEach(el => el.classList.remove('error'));
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showError(elementId, message) {
+            const el = document.getElementById('error-' + elementId);
+            if (el) { el.textContent = message; el.classList.add('show'); }
+            const input = document.getElementById(elementId);
+            if (input) input.classList.add('error');
+        }
+
+        function showModal(errors) {
+            document.getElementById('modalErrors').innerHTML = errors.map(e => `<li>${e}</li>`).join('');
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+        function closeModal() { document.getElementById('modalOverlay').classList.remove('show'); }
+
+        function validateForm() {
+            clearAllErrors(); const errors = [];
+            if (!document.getElementById('modelPath').value.trim()) { showError('modelPath', 'Укажите путь к модели'); errors.push('Не указан путь к базовой модели'); }
+            if (!document.getElementById('adaptersPath').value.trim()) { showError('adaptersPath', 'Укажите путь для сохранения адаптеров'); errors.push('Не указан путь для сохранения адаптеров'); }
+            if (!document.getElementById('outputPath').value.trim()) { showError('outputPath', 'Укажите папку для логов и графиков'); errors.push('Не указана папка для логов и графиков'); }
+            if (!document.getElementById('trainFile').files.length) { showError('trainFile', 'Выберите файл с обучающими данными'); errors.push('Не выбраны обучающие данные'); }
+            if (!document.getElementById('testFile').files.length) { showError('testFile', 'Выберите файл с тестовыми данными'); errors.push('Не выбраны тестовые данные'); }
+            const r = document.getElementById('r').value;
+            if (!r || parseInt(r) < 1) { showError('r', 'Введите положительное целое число'); errors.push('Ранг (R) должен быть положительным целым числом'); }
+            const alpha = document.getElementById('alpha').value;
+            if (!alpha || parseInt(alpha) < 1) { showError('alpha', 'Введите положительное целое число'); errors.push('Alpha должен быть положительным целым числом'); }
+            const dropout = document.getElementById('dropout').value;
+            if (!dropout || isNaN(parseFloat(dropout)) || parseFloat(dropout) < 0 || parseFloat(dropout) > 1) { showError('dropout', 'Введите число от 0 до 1'); errors.push('Dropout должен быть числом от 0 до 1'); }
+            const epochs = document.getElementById('epochs').value;
+            if (!epochs || parseInt(epochs) < 1) { showError('epochs', 'Введите положительное целое число'); errors.push('Количество эпох должно быть положительным целым числом'); }
+            const batchSize = document.getElementById('batch_size').value;
+            if (!batchSize || parseInt(batchSize) < 1) { showError('batch_size', 'Введите положительное целое число'); errors.push('Batch Size должен быть положительным целым числом'); }
+            const lr = document.getElementById('lr').value;
+            if (!lr || !isValidLearningRate(lr)) { showError('lr', 'Введите положительное число (например: 2e-5, 0.0001)'); errors.push('Learning Rate должен быть положительным числом в формате 2e-5 или 0.0001'); }
+            if (!getSelectedModules()) { showError('modules', 'Выберите хотя бы один модуль'); errors.push('Не выбраны модули для LoRA'); }
+            if (!document.getElementById('device').value) { showError('device', 'Выберите устройство'); errors.push('Не выбрано устройство для обучения'); }
+            if (errors.length > 0) { showModal(errors); return false; }
+            return true;
+        }
+
+        function fillExample() {
+            clearAllErrors();
+            document.getElementById('modelPath').value = './models_cache/qwen2.5-0.5b-instruct';
+            document.getElementById('adaptersPath').value = './models/lora_adapters';
+            document.getElementById('outputPath').value = './output';
+            document.getElementById('r').value = '8'; document.getElementById('alpha').value = '16';
+            document.getElementById('dropout').value = '0.1'; document.getElementById('epochs').value = '10';
+            document.getElementById('batch_size').value = '1'; document.getElementById('lr').value = '2e-5';
+            document.getElementById('device').value = 'cpu';
+            document.getElementById('system_prompt').value = 'Ты — эксперт-литературовед. Определяй период и объясняй по каким стилистическим и содержательным признакам сделан вывод.';
+            document.querySelectorAll('#targetModules input[type="checkbox"]').forEach(cb => cb.checked = true);
+            document.getElementById('trainFile').value = ''; document.getElementById('testFile').value = '';
+            document.getElementById('trainStatus').textContent = 'Не загружен'; document.getElementById('trainStatus').className = 'file-status not-loaded';
+            document.getElementById('testStatus').textContent = 'Не загружен'; document.getElementById('testStatus').className = 'file-status not-loaded';
+        }
+
+        function updateLog() {
+            fetch('/log').then(r => r.json()).then(data => {
+                const logDiv = document.getElementById('log');
+                const wasAtBottom = logDiv.scrollHeight - logDiv.scrollTop - logDiv.clientHeight < 50;
+                if (data.training_log) logDiv.textContent = data.training_log;
+                if (wasAtBottom) logDiv.scrollTop = logDiv.scrollHeight;
+
+                if (!data.is_training && logInterval) {
+                    clearInterval(logInterval);
+                    logInterval = null;
+                    document.getElementById('status').className = 'status';
+                    document.getElementById('status').textContent = '';
+                    document.getElementById('startBtn').disabled = false;
+                    document.getElementById('stopBtn').disabled = true;
+                    document.getElementById('inferSendBtn').disabled = false;
+                    document.getElementById('computeBtn').disabled = false;
+                    document.getElementById('downloadBtn').disabled = false;
+                }
+
+                if (!data.is_inference && inferenceActive) {
+                    inferenceActive = false;
+                    document.getElementById('inferenceModelPath').disabled = false;
+                    document.querySelector('input[name="inferenceMode"][value="base"]').disabled = false;
+                    document.querySelector('input[name="inferenceMode"][value="lora"]').disabled = false;
+                    toggleAdapterField();
+                }
+            });
+        }
+
+        async function startTraining() {
+            if (!validateForm()) return;
+            const trainFile = document.getElementById('trainFile').files[0];
+            const testFile = document.getElementById('testFile').files[0];
+            const formData = new FormData(); formData.append('train', trainFile); formData.append('test', testFile);
+            let trainPath = '', testPath = '';
+            try {
+                const response = await fetch('/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+                trainPath = result.paths.train; testPath = result.paths.test;
+            } catch (e) { showErrorMessage('Ошибка загрузки файлов на сервер'); return; }
+
+            const resp = await fetch('/start', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model_path: document.getElementById('modelPath').value,
+                    adapters_path: document.getElementById('adaptersPath').value,
+                    output_path: document.getElementById('outputPath').value,
+                    train_path: trainPath, test_path: testPath,
+                    r: document.getElementById('r').value, alpha: document.getElementById('alpha').value,
+                    dropout: document.getElementById('dropout').value, epochs: document.getElementById('epochs').value,
+                    batch_size: document.getElementById('batch_size').value, lr: document.getElementById('lr').value,
+                    system_prompt: document.getElementById('system_prompt').value,
+                    modules: getSelectedModules(), device: document.getElementById('device').value
+                })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                showModal([data.error]);
+                return;
+            }
+
+            document.getElementById('status').className = 'status running';
+            document.getElementById('status').textContent = 'Запущено обучение...';
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('inferSendBtn').disabled = true;
+            document.getElementById('computeBtn').disabled = true;
+            document.getElementById('downloadBtn').disabled = true;
+
+            if (!logInterval) {
+                logInterval = setInterval(updateLog, 1000);
+            }
+        }
+
+        function stopTraining() { fetch('/stop', { method: 'POST' }); }
+
+        function clearLog() {
+            fetch('/clear', { method: 'POST' }).then(() => {
+                document.getElementById('log').textContent = '';
+                document.getElementById('status').className = 'status';
+                document.getElementById('status').textContent = '';
+            });
+        }
+
+        document.getElementById('modalOverlay').addEventListener('click', function (e) { if (e.target === this) closeModal(); });
+    </script>
+</body>
+</html>
